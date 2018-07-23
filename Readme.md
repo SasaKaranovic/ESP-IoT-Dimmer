@@ -1,8 +1,8 @@
 # ESP IoT Dimmer
 
 
-![](https://sasakaranovic.com/wp-content/uploads/2018/07/IOT-Dimmer-300x169.jpg)
-![](https://sasakaranovic.com/wp-content/uploads/2018/07/WebInterface-300x203.png)
+![](https://github.com/SasaKaranovic/ESP-IoT-Dimmer/raw/master/Images/IOT-Dimmer-300x169.jpg)
+![](https://github.com/SasaKaranovic/ESP-IoT-Dimmer/raw/master/Images/WebInterface-300x203.png)
 
 Making a IoT LED dimmer that you can control through your PC, your mobile, tablet or any other device connected to the network is super simple, and I'm going to show you how.
 
