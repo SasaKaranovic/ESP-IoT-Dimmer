@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name = "viewport" content = "width = device-width, initial-scale = 1.0, maximum-scale = 1.0, user-scalable=0">
+<title>IoT Dimmer - Sasa Karanovic</title>
+<style>
+body { background: #262830 url('http://sasakaranovic.com/iotdimmer/bg.png') repeat; font-family: Arial, Helvetica, Sans-Serif; Color: #fffff9; }
+#container { width: 80%; max-width: 450px; margin: auto; }
+.bulb { display: block; clear: none; width: 32px; height: 32px; padding-bottom: 0.5em; background-attachment: fixed; background-position: center; background-repeat: no-repeat; }
+.bulbOn { background: transparent url('http://sasakaranovic.com/iotdimmer/bulbON.png') top left no-repeat; float: right; }
+.bulbOff{ background: transparent url('http://sasakaranovic.com/iotdimmer/bulbOFF.png') top left no-repeat; float: left; }
+h1 {  display: block; font-size: 2em; margin-top: 0.67em; margin-bottom: 0.67em; margin-left: 0; margin-right: 0; font-weight: bold; text-align: center; }
+.slidecontainer {width: 100%; }
+.slider {width: 100%; margin: 0 0 3em 0; }
+	.buttonOff { background-color: #f44336; }
+	.buttonOn{ background-color: #4CAF50; }
+	a { 
+	background-color: #212121;
+    border: none;
+    color: white;
+    padding: 15px 32px;
+	margin-right: 1em;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+	border-radius: 4px;
+	}
+</style>
+<script>
+var websock;
+function start() {
+websock = new WebSocket('ws://' + window.location.hostname + ':81/');
+websock.onopen = function(evt) { console.log('websock open'); };
+websock.onclose = function(evt) { console.log('websock close'); };
+websock.onerror = function(evt) { console.log(evt); };
+websock.onmessage = function(evt) {
+console.log(evt);
+var ch1 = document.getElementById('ch1');
+var ch2 = document.getElementById('ch2');
+var ch3 = document.getElementById('ch3');
+var ch_values = JSON.parse(evt.data);
+ch1.value = ch_values.ch1;
+ch2.value = ch_values.ch2;
+ch3.value = ch_values.ch3;
+};
+}
+function setAll(val) {
+var dat = 'ch0:'+ val
+websock.send(dat);
+}
+function updateSlider(e) {
+var dat = e.id +':'+ e.value
+websock.send(dat);
+}
+</script>
+</head>
+<body onload="javascript:start();">
+<div id="container">
+<h1>Grooovy Baby</h1>
+<div class="slidecontainer">
+<div class="bulb bulbOn"></div>
+<div class="bulb bulbOff"></div>
+<input id="ch1" type="range" min="1" max="4095" value="0" class="slider" onchange="updateSlider(this)">
+</div>
+<div class="slidecontainer">
+<div class="bulb bulbOn"></div>
+<div class="bulb bulbOff"></div>
+<input id="ch2" type="range" min="1" max="4095" value="0" class="slider" onchange="updateSlider(this)">
+</div>
+<div class="slidecontainer" style="display:none; visibility: hidden">
+<div class="bulb bulbOn"></div>
+<div class="bulb bulbOff"></div>
+<input id="ch3" type="range" min="1" max="4095" value="0" class="slider" onchange="updateSlider(this)">
+</div>
+<div class="slidecontainer" style="text-align: center">
+<a href="#" class="buttonOff" onClick="setAll(1)">Turn Off</a> <a href="#" onClick="setAll(2049)">Set to 50%</a> <a href="#" class="buttonOn"  onClick="setAll(4096)">Turn On</a>
+</div>
+</div>
+</body>
+</html>
