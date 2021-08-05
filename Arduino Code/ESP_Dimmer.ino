@@ -11,8 +11,8 @@
 Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 
 // WiFi Configuration (hard-coded at the moment)
-static const char ssid[] = "__Your-WiFi-SSID__";
-static const char password[] = "__Your-WiFi-Password-Here__";
+// static const char ssid[] = "__Your-WiFi-SSID__";
+// static const char password[] = "__Your-WiFi-Password-Here__";
 
 // mDNS hostname for this device
 // You should be able to call http://dimmer.iot
@@ -32,10 +32,6 @@ volatile uint32_t debug_update = 0;
 volatile uint16_t ch1_target   = 0;  // Channel target value (not used yet)
 volatile uint16_t ch2_target   = 0;  // Channel target value (not used yet)
 volatile uint16_t ch3_target   = 0;  // Channel target value (not used yet)
-volatile uint16_t ch1_current  = 0;  // Channel current value
-volatile uint16_t ch2_current  = 0;  // Channel current value
-volatile uint16_t ch3_current  = 0;  // Channel current value
-
 
 // GPIO#0 is for Adafruit ESP8266 HUZZAH board. Your board LED might be on 13.
 const int LEDPIN = 0;
@@ -55,7 +51,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
 <html>
 <head>
 <meta name = "viewport" content = "width = device-width, initial-scale = 1.0, maximum-scale = 1.0, user-scalable=0">
-<title>IoT Dimmer - Sasa Karanovic</title>
+<title>Sasa's IoT Dimmer - Sasa Karanovic</title>
 <style>
 body { background: #262830 url('http://sasakaranovic.com/iotdimmer/bg.png') repeat; font-family: Arial, Helvetica, Sans-Serif; Color: #fffff9; }
 #container { width: 80%; max-width: 450px; margin: auto; }
@@ -283,7 +279,7 @@ static void writeLED(uint8_t channel, uint16_t value)
     break;
 
     case 1:
-    if(ch1_target != val)
+    if(ch1_target != value)
     {
       ch1_target = value;
       pwm.setPWM(CH1_PIN, value, 0);
@@ -316,7 +312,7 @@ static void writeLED(uint8_t channel, uint16_t value)
 void setup()
 {
   pinMode(EN_PIN, OUTPUT);
-  digitalWrite(EN_PIN, LOW);
+  digitalWrite(EN_PIN, HIGH);
   
   Serial.begin(115200);
 
@@ -331,12 +327,13 @@ void setup()
     Serial.flush();
     delay(1000);
   }
-
+  
+  WiFi.mode(WIFI_STA);
   WiFiMulti.addAP(ssid, password);
 
   while(WiFiMulti.run() != WL_CONNECTED) {
     Serial.print(".");
-    delay(100);
+    delay(1000);
   }
 
   Serial.println("");
@@ -357,8 +354,11 @@ void setup()
   Serial.printf("Connect to http://%s.local or http://", dns_hostname);
   Serial.println(WiFi.localIP());
 
-  server.on("/", handleRoot);
   server.onNotFound(handleNotFound);
+  server.on("/", handleRoot);
+  server.on("/get_status", api_get_status);
+  server.on("/set_channel", handleGenericArgs);
+
 
   server.begin();
 
@@ -373,9 +373,49 @@ void setup()
   pwm.setPWMFreq(1600);  // This is the maximum PWM frequency
 
   Serial.println("Setting CH0-2 to OFF.");
-  pwm.setPWM(CH1_PIN, 0, 4096);
-  pwm.setPWM(CH2_PIN, 0, 4096);
-  pwm.setPWM(CH3_PIN, 0, 4096);
+  pwm.setPWM(CH1_PIN, 1, 4096);
+  pwm.setPWM(CH2_PIN, 1, 4096);
+  pwm.setPWM(CH3_PIN, 1, 4096);
+  digitalWrite(EN_PIN, LOW);
+
+}
+
+void api_get_status(void)
+{
+  Serial.println("api_get_status");
+  char buff[200] = {0};
+
+  sprintf(buff, "{\"ch1\":%d, \"ch2\":%d, \"ch3\":%d}", ch1_target, ch2_target, ch3_target);
+  server.send(404, "text/plain", buff);
+}
+
+
+void handleGenericArgs() { //Handler
+  Serial.println("handleGenericArgs");
+      int32_t api_ch0 = -1;
+      int32_t api_ch1 = -1;
+      int32_t api_ch2 = -1;
+      int32_t api_ch3 = -1;
+
+  for (int i = 0; i < server.args(); i++) {
+    if( strncmp(server.argName(i).c_str(), "ch0", 3) == 0) {  api_ch0 = server.arg(i).toInt(); }
+    if( strncmp(server.argName(i).c_str(), "ch1", 3) == 0) {  api_ch1 = server.arg(i).toInt(); }
+    if( strncmp(server.argName(i).c_str(), "ch2", 3) == 0) {  api_ch2 = server.arg(i).toInt(); }
+    if( strncmp(server.argName(i).c_str(), "ch3", 3) == 0) {  api_ch3 = server.arg(i).toInt(); }
+
+    if(api_ch0 >= 0) { writeLED(0, api_ch0); }
+    if(api_ch1 >= 0) { writeLED(1, api_ch1); }
+    if(api_ch2 >= 0) { writeLED(2, api_ch2); }
+    if(api_ch3 >= 0) { writeLED(3, api_ch3); }
+
+  } 
+
+    // send data to all connected clients
+    char buffer[100] = {0};
+    sprintf(buffer, "{\"ch1\":%d,\"ch2\":%d,\"ch3\":%d}", ch1_target,  ch2_target,  ch3_target);
+    webSocket.broadcastTXT(buffer, strlen(buffer));
+
+  server.send(200, "text/plain", buffer);       //Response to the HTTP request
 
 }
 
